@@ -43,12 +43,12 @@ func MarkdownToHTML(md string) string {
 	return bluemonday.UGCPolicy().Sanitize(theHTML)
 }
 
-func mdparse(path string) string {
-	res := readFile(path)
+func MarkdownParse(path string) string {
+	res := ReadFile(path)
 	result := MarkdownToHTML(res)
 	return result
 }
-func readFile(path string) string {
+func ReadFile(path string) string {
 	fi, err := os.Open(path)
 	if err != nil {
 		panic(err)
@@ -57,7 +57,7 @@ func readFile(path string) string {
 	fd, _ := ioutil.ReadAll(fi)
 	return string(fd)
 }
-func add_html_tag(input string) string {
+func AddHtmlTag(input string) string {
 	//拼凑HTML页面，需要先导入Strings包
 	s1 := "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title></title></head><body>"
 	s2 := "</body></html>"
@@ -69,7 +69,7 @@ func add_html_tag(input string) string {
 	return s3
 }
 
-func parse_inline_css(content string) string {
+func ParseInlineCss(content string) string {
 	prem, err := premailer.NewPremailerFromString(content, premailer.NewOptions())
 	if err != nil {
 		panic(err)
@@ -81,17 +81,17 @@ func parse_inline_css(content string) string {
 	}
 	return html
 }
-func md_run(md_file string, css_file string, content_img_path string, App *offiaccount.OffiAccount) string {
+func MarkdownRun(md_file string, css_file string, content_img_path string, App *offiaccount.OffiAccount) string {
 
-	md := mdparse(md_file)
+	md := MarkdownParse(md_file)
 
-	content := add_html_tag(md)
+	content := AddHtmlTag(md)
 
 	dom, err := goquery.NewDocumentFromReader(strings.NewReader(content))
 	if err != nil {
 		panic(err)
 	}
-	css := readFile(css_file)
+	css := ReadFile(css_file)
 	dom.Find("title").Each(func(i int, selection *goquery.Selection) {
 		selection.AfterHtml("<style>" + css + "</style>")
 	})
@@ -127,7 +127,7 @@ func md_run(md_file string, css_file string, content_img_path string, App *offia
 	})
 
 	dom_content, _ := dom.Html()
-	parse_inline_html := parse_inline_css(dom_content)
+	parse_inline_html := ParseInlineCss(dom_content)
 
 	parsedom, err := goquery.NewDocumentFromReader(strings.NewReader(parse_inline_html))
 	if err != nil {
