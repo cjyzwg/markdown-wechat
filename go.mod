@@ -1,4 +1,4 @@
-module github.com/markdown-wechat
+module github.com/cjyzwg/markdown-wechat
 
 go 1.17
 
