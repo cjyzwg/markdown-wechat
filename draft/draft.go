@@ -17,3 +17,13 @@ type Article struct {
 	NeedOpenComment    int    `json:"need_open_comment"`
 	OnlyFansCanComment int    `json:"only_fans_can_comment"`
 }
+
+type ConfigFile struct {
+	MarkdownFilePath string `json:"markdown_file_path"`
+	CssFilePath      string `json:"css_file_path"`
+	AssetsPath       string `json:"assets_path"` //文中图片路径
+	ImagePath        string `json:"image_path"`  //标题图片路径
+	Title            string `json:"title"`
+	Author           string `json:"author"`
+	Digest           string `json:"digest"`
+}
