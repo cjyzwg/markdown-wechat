@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/fastwego/offiaccount"
 	"github.com/fastwego/offiaccount/apis/material"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
@@ -80,7 +81,7 @@ func parse_inline_css(content string) string {
 	}
 	return html
 }
-func md_run(md_file string, css_file string, content_img_path string) string {
+func md_run(md_file string, css_file string, content_img_path string, App *offiaccount.OffiAccount) string {
 
 	md := mdparse(md_file)
 
