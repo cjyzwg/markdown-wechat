@@ -86,7 +86,7 @@ func RepImage(htmls string) string {
 	imgs := imgRE.FindAllStringSubmatch(htmls, -1)
 	return imgs[0][1]
 }
-func MarkdownRun(md_file string, css_file string, content_img_path string, App *offiaccount.OffiAccount) string {
+func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) string {
 
 	md := MarkdownParse(md_file)
 

@@ -21,9 +21,9 @@ type Article struct {
 type ConfigFile struct {
 	MarkdownFilePath string `json:"markdown_file_path"`
 	CssFilePath      string `json:"css_file_path"`
-	AssetsPath       string `json:"assets_path"` //文中图片路径
-	ImagePath        string `json:"image_path"`  //标题图片路径
-	Title            string `json:"title"`
-	Author           string `json:"author"`
-	Digest           string `json:"digest"`
+	// AssetsPath       string `json:"assets_path"` //文中图片路径,这个已经改成网络图片的url地址
+	ImagePath string `json:"image_path"` //标题图片路径
+	Title     string `json:"title"`
+	Author    string `json:"author"`
+	Digest    string `json:"digest"`
 }

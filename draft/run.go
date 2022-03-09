@@ -12,7 +12,7 @@ import (
 
 func DraftRun(config_file *ConfigFile, App *offiaccount.OffiAccount) (string, error) {
 
-	content := MarkdownRun(config_file.MarkdownFilePath, config_file.CssFilePath, config_file.AssetsPath, App)
+	content := MarkdownRun(config_file.MarkdownFilePath, config_file.CssFilePath, App)
 	content = strings.Replace(content, "@s-;", "&nbsp;", -1)
 
 	// 	//新增图片素材，获取media_id
