@@ -3,18 +3,61 @@ package draft
 
 import (
 	"bytes"
+	"io/ioutil"
+	"mime/multipart"
+	"net/http"
+	"path"
 
 	"github.com/fastwego/offiaccount"
 )
 
 const (
-	apiAddDraft      = "/cgi-bin/draft/add"
-	apiGetDraft      = "/cgi-bin/draft/get"
-	apiDelDraft      = "/cgi-bin/draft/delete"
-	apiUpdateDraft   = "/cgi-bin/draft/update"
-	apiGetDraftCount = "/cgi-bin/draft/count"
-	apiBatchgetDraft = "/cgi-bin/draft/batchget"
+	apiAddDraft          = "/cgi-bin/draft/add"
+	apiGetDraft          = "/cgi-bin/draft/get"
+	apiDelDraft          = "/cgi-bin/draft/delete"
+	apiUpdateDraft       = "/cgi-bin/draft/update"
+	apiGetDraftCount     = "/cgi-bin/draft/count"
+	apiBatchgetDraft     = "/cgi-bin/draft/batchget"
+	apiMediaUploadImgUrl = "/cgi-bin/media/uploadimg"
 )
+
+/*
+上传图文消息内的图片获取URL
+
+本接口所上传的图片不占用公众号的素材库中图片数量的100000个的限制。图片仅支持jpg/png格式，大小必须在1MB以下
+
+See: https://developers.weixin.qq.com/doc/offiaccount/Asset_Management/Adding_Permanent_Assets.html
+
+POST https://api.weixin.qq.com/cgi-bin/media/uploadimg?access_token=ACCESS_TOKEN
+*/
+func MediaUploadImgUrl(ctx *offiaccount.OffiAccount, media_url string) (resp []byte, err error) {
+
+	current, err := http.Get(media_url)
+	if err != nil {
+		return
+	}
+
+	fileContents, err := ioutil.ReadAll(current.Body)
+	if err != nil {
+		return
+	}
+	fileName := path.Base(media_url)
+
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("media", fileName)
+	if err != nil {
+		return
+	}
+	part.Write(fileContents)
+
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return ctx.Client.HTTPPost(apiMediaUploadImgUrl, body, writer.FormDataContentType())
+}
 
 /*
 新增草稿箱

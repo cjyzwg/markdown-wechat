@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fastwego/offiaccount"
-	"github.com/fastwego/offiaccount/apis/material"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
 	"github.com/vanng822/go-premailer/premailer"
@@ -81,6 +81,11 @@ func ParseInlineCss(content string) string {
 	}
 	return html
 }
+func RepImage(htmls string) string {
+	var imgRE = regexp.MustCompile(`<img[^>]+\bsrc=["']([^"']+)["']`)
+	imgs := imgRE.FindAllStringSubmatch(htmls, -1)
+	return imgs[0][1]
+}
 func MarkdownRun(md_file string, css_file string, content_img_path string, App *offiaccount.OffiAccount) string {
 
 	md := MarkdownParse(md_file)
@@ -101,10 +106,12 @@ func MarkdownRun(md_file string, css_file string, content_img_path string, App *
 		pos := strings.Index(html, "<img")
 		if pos > -1 {
 			//存在img标签，即图片
-			firstpos := strings.Index(html, content_img_path)
-			lastpos := strings.Index(html, "alt")
-			img_path := html[firstpos:(lastpos - 2)]
-			resp, err := material.MediaUploadImg(App, img_path)
+			// firstpos := strings.Index(html, content_img_path)
+			// lastpos := strings.Index(html, "alt")
+			// img_path := html[firstpos:(lastpos - 2)]
+			// resp, err := material.MediaUploadImg(App, img_path)
+			img_url := RepImage(html)
+			resp, err := MediaUploadImgUrl(App, img_url)
 			if err != nil {
 				panic(err)
 			}
