@@ -111,6 +111,7 @@ func MarkdownRun(md_file string, css_file string, content_img_path string, App *
 			// img_path := html[firstpos:(lastpos - 2)]
 			// resp, err := material.MediaUploadImg(App, img_path)
 			img_url := RepImage(html)
+			fmt.Println("当前图文信息中的url地址为：" + img_url)
 			resp, err := MediaUploadImgUrl(App, img_url)
 			if err != nil {
 				panic(err)
