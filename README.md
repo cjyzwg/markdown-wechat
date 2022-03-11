@@ -27,6 +27,12 @@ import (
 res, err := draft.DraftRun(config_file, App)
 ```
 
+#### 参考链接
+1.chroma代码块高亮:https://www.zupzup.org/go-markdown-syntax-highlight-chroma/  
+2.chroma代码块高亮:https://github.com/zupzup/markdown-code-highlight-chroma  
+3.chroma高亮的css:https://xyproto.github.io/splash/docs/index.html  
+4.goquery方法:https://blog.csdn.net/skh2015java/article/details/72998418  
+5.goquery详细方法:https://cloud.tencent.com/developer/article/1196783
 
 
 

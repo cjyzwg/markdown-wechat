@@ -129,7 +129,7 @@ func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) 
 		panic(err)
 	}
 	//将代码块部分修改
-	content, _ = ReplaceCodeParts(dom)
+	ReplaceCodeParts(dom)
 
 	//代码高亮css
 	code_css := WriteCodeCss(styles.MonokaiLight)
