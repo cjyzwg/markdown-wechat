@@ -1,6 +1,8 @@
 package draft
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,43 +12,73 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/alecthomas/chroma"
+	"github.com/alecthomas/chroma/formatters/html"
+	"github.com/alecthomas/chroma/lexers"
+	"github.com/alecthomas/chroma/styles"
 	"github.com/fastwego/offiaccount"
-	"github.com/microcosm-cc/bluemonday"
 	"github.com/russross/blackfriday"
 	"github.com/vanng822/go-premailer/premailer"
 )
 
-func MarkdownToHTML(md string) string {
-	myHTMLFlags := 0 |
-		blackfriday.HTML_USE_XHTML |
-		blackfriday.HTML_USE_SMARTYPANTS |
-		blackfriday.HTML_SMARTYPANTS_FRACTIONS |
-		blackfriday.HTML_SMARTYPANTS_LATEX_DASHES
-
-	myExtensions := 0 |
-		blackfriday.EXTENSION_NO_INTRA_EMPHASIS |
-		blackfriday.EXTENSION_TABLES |
-		blackfriday.EXTENSION_FENCED_CODE |
-		blackfriday.EXTENSION_AUTOLINK |
-		blackfriday.EXTENSION_STRIKETHROUGH |
-		blackfriday.EXTENSION_SPACE_HEADERS |
-		blackfriday.EXTENSION_HEADER_IDS |
-		blackfriday.EXTENSION_BACKSLASH_LINE_BREAK |
-		blackfriday.EXTENSION_DEFINITION_LISTS |
-		blackfriday.EXTENSION_HARD_LINE_BREAK
-
-	renderer := blackfriday.HtmlRenderer(myHTMLFlags, "", "")
-	bytes := blackfriday.MarkdownOptions([]byte(md), renderer, blackfriday.Options{
-		Extensions: myExtensions,
+func WriteCodeCss(theme *chroma.Style) string {
+	// write css
+	hlbuf := bytes.Buffer{}
+	hlw := bufio.NewWriter(&hlbuf)
+	formatter := html.New(html.WithClasses(true))
+	if err := formatter.WriteCSS(hlw, theme); err != nil {
+		panic(err)
+	}
+	hlw.Flush()
+	return hlbuf.String()
+}
+func ReplaceCodeParts(doc *goquery.Document) (string, error) {
+	// find code-parts via selector and replace them with highlighted versions
+	var hlErr error
+	doc.Find("code[class*=\"language-\"]").Each(func(i int, s *goquery.Selection) {
+		if hlErr != nil {
+			return
+		}
+		class, _ := s.Attr("class")
+		lang := strings.TrimPrefix(class, "language-")
+		oldCode := s.Text()
+		lexer := lexers.Get(lang)
+		formatter := html.New(html.WithClasses(true))
+		iterator, err := lexer.Tokenise(nil, string(oldCode))
+		if err != nil {
+			hlErr = err
+			return
+		}
+		b := bytes.Buffer{}
+		buf := bufio.NewWriter(&b)
+		if err := formatter.Format(buf, styles.GitHub, iterator); err != nil {
+			hlErr = err
+			return
+		}
+		if err := buf.Flush(); err != nil {
+			hlErr = err
+			return
+		}
+		s.SetHtml(b.String())
 	})
-	theHTML := string(bytes)
-	return bluemonday.UGCPolicy().Sanitize(theHTML)
+	if hlErr != nil {
+		return "", hlErr
+	}
+	new, err := doc.Html()
+	if err != nil {
+		return "", err
+	}
+	// replace unnecessarily added html tags
+	return new, nil
 }
 
 func MarkdownParse(path string) string {
-	res := ReadFile(path)
-	result := MarkdownToHTML(res)
-	return result
+	mdFile, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	htmlSrc := blackfriday.MarkdownCommon(mdFile)
+	return string(htmlSrc)
 }
 func ReadFile(path string) string {
 	fi, err := os.Open(path)
@@ -96,20 +128,27 @@ func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) 
 	if err != nil {
 		panic(err)
 	}
+	//将代码块部分修改
+	content, _ = ReplaceCodeParts(dom)
+
+	//代码高亮css
+	code_css := WriteCodeCss(styles.MonokaiLight)
+
+	//正常css
 	css := ReadFile(css_file)
 	dom.Find("title").Each(func(i int, selection *goquery.Selection) {
-		selection.AfterHtml("<style>" + css + "</style>")
+		selection.AfterHtml("<style>" + code_css + css + "</style>")
+	})
+	dom.Find("p:contains(a)").Each(func(i int, selection *goquery.Selection) {
+		selection.SetText(strings.Replace(selection.Text(), " ", "@s-;", -1))
+
 	})
 
-	dom.Find("p").Each(func(i int, selection *goquery.Selection) {
+	dom.Find("p:contains(img)").Each(func(i int, selection *goquery.Selection) {
 		html, _ := selection.Html()
 		pos := strings.Index(html, "<img")
 		if pos > -1 {
 			//存在img标签，即图片
-			// firstpos := strings.Index(html, content_img_path)
-			// lastpos := strings.Index(html, "alt")
-			// img_path := html[firstpos:(lastpos - 2)]
-			// resp, err := material.MediaUploadImg(App, img_path)
 			img_url := RepImage(html)
 			fmt.Println("当前图文信息中的url地址为：" + img_url)
 			resp, err := MediaUploadImgUrl(App, img_url)
@@ -125,8 +164,6 @@ func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) 
 				fmt.Println(err)
 			}
 
-		} else {
-			selection.SetText(strings.Replace(selection.Text(), " ", "@s-;", -1))
 		}
 	})
 
