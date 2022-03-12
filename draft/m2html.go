@@ -118,16 +118,42 @@ func RepImage(htmls string) string {
 	imgs := imgRE.FindAllStringSubmatch(htmls, -1)
 	return imgs[0][1]
 }
+func ChangeLine(content string) string {
+	dom, err := goquery.NewDocumentFromReader(strings.NewReader(content))
+	if err != nil {
+		panic(err)
+	}
+	dom.Find("pre>code").Each(func(i int, selection *goquery.Selection) {
+		textstring := selection.Text()
+		textstring = strings.Replace(textstring, "\n", "g^g+;", -1)
+		selection.SetText(textstring)
+	})
+	str, _ := dom.Html()
+	//移除所有换行
+	str = strings.Replace(str, "\n", "", -1)
+	return str
+}
+func RemoveLine(dom *goquery.Document) *goquery.Document {
+	dom.Find("pre>code").Each(func(i int, selection *goquery.Selection) {
+		textstring := selection.Text()
+		textstring = strings.Replace(textstring, "g^g+;", "\n", -1)
+		selection.SetText(textstring)
+	})
+	return dom
+}
 func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) string {
 
 	md := MarkdownParse(md_file)
 
 	content := AddHtmlTag(md)
+	//将\n换行,更换成
+	content = ChangeLine(content)
 
 	dom, err := goquery.NewDocumentFromReader(strings.NewReader(content))
 	if err != nil {
 		panic(err)
 	}
+	dom = RemoveLine(dom)
 	//将代码块部分修改
 	ReplaceCodeParts(dom)
 
