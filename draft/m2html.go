@@ -144,12 +144,9 @@ func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) 
 
 	})
 
-	dom.Find("p:contains(img)").Each(func(i int, selection *goquery.Selection) {
-		html, _ := selection.Html()
-		pos := strings.Index(html, "<img")
-		if pos > -1 {
-			//存在img标签，即图片
-			img_url := RepImage(html)
+	dom.Find("img").Each(func(i int, selection *goquery.Selection) {
+		img_url, existed := selection.Attr("src")
+		if existed {
 			fmt.Println("当前图文信息中的url地址为：" + img_url)
 			resp, err := MediaUploadImgUrl(App, img_url)
 			if err != nil {
@@ -157,13 +154,10 @@ func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) 
 			}
 			var img_return ThumbReturn
 			if err = json.Unmarshal([]byte(resp), &img_return); err == nil {
-				img_url := img_return.Url
-				html_tag := "<img src=\"" + img_url + "\" alt=\"avatar\"/>"
-				selection.SetHtml(html_tag)
+				selection.SetAttr("src", img_return.Url)
 			} else {
 				fmt.Println(err)
 			}
-
 		}
 	})
 
