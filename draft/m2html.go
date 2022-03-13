@@ -18,6 +18,8 @@ import (
 	"github.com/alecthomas/chroma/styles"
 	"github.com/fastwego/offiaccount"
 	"github.com/russross/blackfriday"
+	"github.com/tdewolff/minify/v2"
+	mhtml "github.com/tdewolff/minify/v2/html"
 	"github.com/vanng822/go-premailer/premailer"
 )
 
@@ -147,13 +149,13 @@ func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) 
 
 	content := AddHtmlTag(md)
 	//将\n换行,更换成
-	content = ChangeLine(content)
+	// content = ChangeLine(content)
 
 	dom, err := goquery.NewDocumentFromReader(strings.NewReader(content))
 	if err != nil {
 		panic(err)
 	}
-	dom = RemoveLine(dom)
+	// dom = RemoveLine(dom)
 	//将代码块部分修改
 	ReplaceCodeParts(dom)
 
@@ -165,10 +167,11 @@ func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) 
 	dom.Find("title").Each(func(i int, selection *goquery.Selection) {
 		selection.AfterHtml("<style>" + code_css + css + "</style>")
 	})
-	dom.Find("p:contains(a)").Each(func(i int, selection *goquery.Selection) {
-		selection.SetText(strings.Replace(selection.Text(), " ", "@s-;", -1))
 
-	})
+	// dom.Find("p:contains(a)").Each(func(i int, selection *goquery.Selection) {
+	// 	selection.SetText(strings.Replace(selection.Text(), " ", "@s-;", -1))
+
+	// })
 
 	dom.Find("img").Each(func(i int, selection *goquery.Selection) {
 		img_url, existed := selection.Attr("src")
@@ -208,14 +211,18 @@ func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) 
 	ref := `<section class="footnotes">`
 	refindex := 0
 	parsedom.Find("a").Each(func(i int, selection *goquery.Selection) {
-		refindex += 1
 		text := selection.Text()
-		link, exists := selection.Attr("href")
-		if exists {
-			ref_indexstr := strconv.Itoa(refindex)
-			new := "<span class=\"footnote-word\" style=\"color: #1e6bb8; font-weight: bold;\"></span><sup class=\"footnote-ref\" style=\"line-height: 0; color: #1e6bb8; font-weight: bold;\">[" + ref_indexstr + "]</sup>"
-			selection.AppendHtml(new)
-			ref += "<span id=\"fn" + ref_indexstr + "\" class=\"footnote-item\" style=\"display: flex;\"><span class=\"footnote-num\" style=\"display: inline; background: none; font-size: 80%; opacity: 0.6; line-height: 26px; font-family: ptima-Regular, Optima, PingFangSC-light, PingFangTC-light, PingFang SC, Cambria, Cochin, Georgia, Times, Times New Roman, serif;\">[" + ref_indexstr + "]</span><p style=\"padding-top: 8px; padding-bottom: 8px; display: inline; font-size: 14px; width: 90%; padding: 0px; margin: 0; line-height: 26px; color: black; word-break: break-all; width: calc(100%-50);\"> " + text + "&nbsp: <em style=\"font-style: italic; color: black;\">" + link + "</em></p></span>\n"
+		ishttp := IsHttp(text)
+		if !ishttp {
+			//非http链接才可以添加
+			refindex += 1
+			link, exists := selection.Attr("href")
+			if exists {
+				ref_indexstr := strconv.Itoa(refindex)
+				new := "<span class=\"footnote-word\" style=\"color: #1e6bb8; font-weight: bold;\"></span><sup class=\"footnote-ref\" style=\"line-height: 0; color: #1e6bb8; font-weight: bold;\">[" + ref_indexstr + "]</sup>"
+				selection.AppendHtml(new)
+				ref += "<span id=\"fn" + ref_indexstr + "\" class=\"footnote-item\" style=\"display: flex;\"><span class=\"footnote-num\" style=\"display: inline; background: none; font-size: 80%; opacity: 0.6; line-height: 26px; font-family: ptima-Regular, Optima, PingFangSC-light, PingFangTC-light, PingFang SC, Cambria, Cochin, Georgia, Times, Times New Roman, serif;\">[" + ref_indexstr + "]</span><p style=\"padding-top: 8px; padding-bottom: 8px; display: inline; font-size: 14px; width: 90%; padding: 0px; margin: 0; line-height: 26px; color: black; word-break: break-all; width: calc(100%-50);\"> " + text + "&nbsp: <em style=\"font-style: italic; color: black;\">" + link + "</em></p></span>\n"
+			}
 		}
 
 	})
@@ -226,5 +233,55 @@ func MarkdownRun(md_file string, css_file string, App *offiaccount.OffiAccount) 
 
 	str, _ := parsedom.Html()
 	return str
+
+}
+
+// 压缩html文件
+func HtmlMinifyFile(filename string) (string, error) {
+
+	m := minify.New()
+	m.Add("text/html", &mhtml.Minifier{
+		KeepDefaultAttrVals: true,
+		KeepDocumentTags:    true,
+		KeepEndTags:         true,
+	})
+
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	mb, err := m.String("text/html", string(b))
+	if err != nil {
+		return "", err
+	}
+
+	return mb, err
+
+}
+func HtmlMinify(htmlstring string) (string, error) {
+
+	m := minify.New()
+	m.Add("text/html", &mhtml.Minifier{
+		KeepDefaultAttrVals: true,
+		KeepDocumentTags:    true,
+		KeepEndTags:         true,
+	})
+
+	mb, err := m.String("text/html", htmlstring)
+	if err != nil {
+		return "", err
+	}
+
+	return mb, err
+
+}
+func IsHttp(text string) bool {
+	myRegex, _ := regexp.Compile("^(http|https)://")
+	found := myRegex.FindStringIndex(text)
+	if found == nil {
+		return false
+	} else {
+		return true
+	}
 
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/fastwego/offiaccount"
 	"github.com/fastwego/offiaccount/apis/material"
@@ -15,7 +14,9 @@ func DraftRun(config_file *ConfigFile, App *offiaccount.OffiAccount) (string, er
 	content := MarkdownRun(config_file.MarkdownFilePath, config_file.CssFilePath, App)
 
 	//修改空格的问题
-	content = strings.Replace(content, "@s-;", "&nbsp;", -1)
+	// content = strings.Replace(content, "@s-;", "&nbsp;", -1)
+
+	content, _ = HtmlMinify(content)
 
 	// 	//新增图片素材，获取media_id
 	params := url.Values{}
